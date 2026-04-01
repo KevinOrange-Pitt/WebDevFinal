@@ -34,6 +34,13 @@ body {
     margin-bottom: 30px;
 }
 
+.status {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    color: #444;
+    min-height: 1.2em;
+}
+
 .menu {
     display: flex;
     flex-direction: column;

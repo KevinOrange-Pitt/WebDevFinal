@@ -27,8 +27,7 @@ const roomSession = {
 const socket = io({
     path: "/socket.io/",
     transports: ["websocket", "polling"],
-    upgrade: true,
-    tryAllTransports: true,
+    upgrade: false,
     rememberUpgrade: true,
     reconnection: true,
     reconnectionAttempts: Infinity,

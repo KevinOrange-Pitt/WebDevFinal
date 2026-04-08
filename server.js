@@ -443,7 +443,7 @@ function removePlayerFromRooms(socketId, options = {}) {
                 }
             }, RECONNECT_GRACE_MS);
 
-            addChatMessage(room, `${player.name} disconnected. Holding their spot for 20 seconds.`, {
+            addChatMessage(room, `${player.name} disconnected. Holding their spot for 90 seconds.`, {
                 system: true
             });
             emitRoomState(roomCode);

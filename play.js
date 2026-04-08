@@ -25,14 +25,16 @@ const roomSession = {
 };
 
 const socket = io({
-    transports: ["polling", "websocket"],
+    path: "/socket.io/",
+    transports: ["websocket", "polling"],
     upgrade: true,
     tryAllTransports: true,
+    rememberUpgrade: true,
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 500,
     reconnectionDelayMax: 2500,
-    timeout: 20000,
+    timeout: 60000,
     withCredentials: true
 });
 
@@ -70,6 +72,7 @@ const elements = {
 
 let roomState = null;
 let countdownInterval = null;
+let reconnectNoticeTimer = null;
 
 function persistRoomSession(updates = {}) {
     Object.assign(roomSession, updates);
@@ -502,6 +505,11 @@ elements.chatForm.addEventListener("submit", (event) => {
 });
 
 socket.on("connect", () => {
+    if (reconnectNoticeTimer) {
+        clearTimeout(reconnectNoticeTimer);
+        reconnectNoticeTimer = null;
+    }
+
     attemptRoomReconnect();
     render();
 });
@@ -534,6 +542,11 @@ socket.io.on("reconnect_failed", () => {
 });
 
 socket.on("connect_error", () => {
+    if (reconnectNoticeTimer) {
+        clearTimeout(reconnectNoticeTimer);
+        reconnectNoticeTimer = null;
+    }
+
     if (roomSession.roomCode) {
         setFeedback("Trying another connection path to the game server…", true);
     } else {
@@ -544,9 +557,15 @@ socket.on("connect_error", () => {
 socket.on("disconnect", () => {
     render();
 
-    if (roomSession.roomCode) {
-        setFeedback("Connection dropped. Reconnecting to the room…", true);
+    if (reconnectNoticeTimer) {
+        clearTimeout(reconnectNoticeTimer);
     }
+
+    reconnectNoticeTimer = setTimeout(() => {
+        if (roomSession.roomCode && !socket.connected) {
+            setFeedback("Connection dropped. Reconnecting to the room…", true);
+        }
+    }, 1500);
 });
 
 ensureCountdown();

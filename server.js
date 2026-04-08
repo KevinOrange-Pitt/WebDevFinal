@@ -9,13 +9,13 @@ require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 
-server.keepAliveTimeout = 65000;
-server.headersTimeout = 66000;
+server.keepAliveTimeout = 125000;
+server.headersTimeout = 126000;
 
 const io = new Server(server, {
-    transports: ["polling", "websocket"],
-    pingInterval: 10000,
-    pingTimeout: 20000,
+    transports: ["websocket", "polling"],
+    pingInterval: 25000,
+    pingTimeout: 60000,
     cors: {
         origin: true,
         credentials: true
@@ -44,7 +44,7 @@ const WORD_SETS = [
 const rooms = new Map();
 const ROUND_DURATION_MS = 75000;
 const WINNING_SCORE = 5;
-const RECONNECT_GRACE_MS = 20000;
+const RECONNECT_GRACE_MS = 90000;
 
 function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString("hex");

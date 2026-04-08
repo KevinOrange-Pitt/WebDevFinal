@@ -8,9 +8,18 @@ require("dotenv").config();
 
 const app = express();
 const server = http.createServer(app);
+
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;
+
 const io = new Server(server, {
-    pingInterval: 15000,
-    pingTimeout: 30000
+    transports: ["polling", "websocket"],
+    pingInterval: 10000,
+    pingTimeout: 20000,
+    cors: {
+        origin: true,
+        credentials: true
+    }
 });
 const port = process.env.PORT || 3000;
 const mongoUri = process.env.MONGO_URI;

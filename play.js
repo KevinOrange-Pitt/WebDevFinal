@@ -25,12 +25,15 @@ const roomSession = {
 };
 
 const socket = io({
-    transports: ["websocket"],
+    transports: ["polling", "websocket"],
+    upgrade: true,
+    tryAllTransports: true,
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 500,
     reconnectionDelayMax: 2500,
-    timeout: 10000
+    timeout: 20000,
+    withCredentials: true
 });
 
 const elements = {
@@ -520,8 +523,22 @@ socket.on("room:error", (message) => {
     setFeedback(message || "Something went wrong.", true);
 });
 
+socket.io.on("reconnect_attempt", () => {
+    if (roomSession.roomCode) {
+        setFeedback("Connection dropped. Trying to reconnect…", true);
+    }
+});
+
+socket.io.on("reconnect_failed", () => {
+    setFeedback("Still unable to reconnect. Check the server or refresh the page.", true);
+});
+
 socket.on("connect_error", () => {
-    setFeedback("Unable to reach the game server right now.", true);
+    if (roomSession.roomCode) {
+        setFeedback("Trying another connection path to the game server…", true);
+    } else {
+        setFeedback("Unable to reach the game server right now.", true);
+    }
 });
 
 socket.on("disconnect", () => {

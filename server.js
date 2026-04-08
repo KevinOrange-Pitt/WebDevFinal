@@ -8,7 +8,10 @@ require("dotenv").config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    pingInterval: 15000,
+    pingTimeout: 30000
+});
 const port = process.env.PORT || 3000;
 const mongoUri = process.env.MONGO_URI;
 
@@ -32,6 +35,7 @@ const WORD_SETS = [
 const rooms = new Map();
 const ROUND_DURATION_MS = 75000;
 const WINNING_SCORE = 5;
+const RECONNECT_GRACE_MS = 20000;
 
 function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString("hex");
@@ -62,6 +66,10 @@ function normalizeRoomCode(value) {
     return (value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
 }
 
+function normalizePlayerKey(value) {
+    return typeof value === "string" ? value.trim().slice(0, 80) : "";
+}
+
 function generateRoomCode() {
     let code = "";
 
@@ -86,13 +94,53 @@ function ensureUniquePlayerName(room, requestedName) {
     return candidate;
 }
 
-function createPlayer(socketId, name) {
+function createPlayer(socketId, name, playerKey) {
     return {
         id: socketId,
+        playerKey,
         name,
         score: 0,
-        role: null
+        role: null,
+        connected: true,
+        disconnectTimer: null,
+        disconnectDeadline: null
     };
+}
+
+function clearDisconnectTimer(player) {
+    if (player?.disconnectTimer) {
+        clearTimeout(player.disconnectTimer);
+        player.disconnectTimer = null;
+    }
+
+    if (player) {
+        player.disconnectDeadline = null;
+    }
+}
+
+function remapPlayerReferences(room, previousSocketId, nextSocketId) {
+    if (!room || !previousSocketId || !nextSocketId || previousSocketId === nextSocketId) {
+        return;
+    }
+
+    if (room.hostId === previousSocketId) {
+        room.hostId = nextSocketId;
+    }
+
+    if (room.impostorId === previousSocketId) {
+        room.impostorId = nextSocketId;
+    }
+
+    if (room.votes[previousSocketId]) {
+        room.votes[nextSocketId] = room.votes[previousSocketId];
+        delete room.votes[previousSocketId];
+    }
+
+    Object.entries(room.votes).forEach(([voterId, targetId]) => {
+        if (targetId === previousSocketId) {
+            room.votes[voterId] = nextSocketId;
+        }
+    });
 }
 
 function clearRoundTimer(room) {
@@ -157,7 +205,8 @@ function getPublicRoomState(room, viewerId) {
             id: player.id,
             name: player.name,
             score: player.score,
-            isHost: player.id === room.hostId
+            isHost: player.id === room.hostId,
+            connected: player.connected !== false
         })),
         you: you
             ? {
@@ -317,7 +366,51 @@ function tallyVotes(room) {
     emitRoomState(room.code);
 }
 
-function removePlayerFromRooms(socketId) {
+function finalizePlayerRemoval(roomCode, socketId) {
+    const room = rooms.get(roomCode);
+    const player = room?.players.find((entry) => entry.id === socketId);
+
+    if (!room || !player) {
+        return;
+    }
+
+    clearDisconnectTimer(player);
+    room.players = room.players.filter((entry) => entry.id !== socketId);
+    delete room.votes[socketId];
+
+    Object.entries(room.votes).forEach(([voterId, targetId]) => {
+        if (targetId === socketId) {
+            delete room.votes[voterId];
+        }
+    });
+
+    addChatMessage(room, `${player.name} left the room.`, { system: true });
+
+    if (room.players.length === 0) {
+        clearRoundTimer(room);
+        rooms.delete(roomCode);
+        return;
+    }
+
+    if (room.hostId === socketId) {
+        room.hostId = room.players[0].id;
+        addChatMessage(room, `${room.players[0].name} is now the host.`, { system: true });
+    }
+
+    if (room.phase === "discussion" && (room.players.length < 3 || socketId === room.impostorId)) {
+        resetRound(room, "lobby");
+        addChatMessage(room, "Round cancelled and returned to the lobby.", { system: true });
+    } else if (room.phase === "discussion" && Object.keys(room.votes).length === room.players.length) {
+        tallyVotes(room);
+        return;
+    }
+
+    emitRoomState(roomCode);
+}
+
+function removePlayerFromRooms(socketId, options = {}) {
+    const { allowReconnect = false } = options;
+
     for (const [roomCode, room] of rooms.entries()) {
         const player = room.players.find((entry) => entry.id === socketId);
 
@@ -325,37 +418,30 @@ function removePlayerFromRooms(socketId) {
             continue;
         }
 
-        room.players = room.players.filter((entry) => entry.id !== socketId);
-        delete room.votes[socketId];
-
-        Object.entries(room.votes).forEach(([voterId, targetId]) => {
-            if (targetId === socketId) {
-                delete room.votes[voterId];
+        if (allowReconnect) {
+            if (player.disconnectTimer) {
+                continue;
             }
-        });
 
-        addChatMessage(room, `${player.name} left the room.`, { system: true });
+            player.connected = false;
+            player.disconnectDeadline = Date.now() + RECONNECT_GRACE_MS;
+            player.disconnectTimer = setTimeout(() => {
+                const latestRoom = rooms.get(roomCode);
+                const latestPlayer = latestRoom?.players.find((entry) => entry.id === socketId);
 
-        if (room.players.length === 0) {
-            clearRoundTimer(room);
-            rooms.delete(roomCode);
+                if (latestRoom && latestPlayer && latestPlayer.connected === false) {
+                    finalizePlayerRemoval(roomCode, socketId);
+                }
+            }, RECONNECT_GRACE_MS);
+
+            addChatMessage(room, `${player.name} disconnected. Holding their spot for 20 seconds.`, {
+                system: true
+            });
+            emitRoomState(roomCode);
             continue;
         }
 
-        if (room.hostId === socketId) {
-            room.hostId = room.players[0].id;
-            addChatMessage(room, `${room.players[0].name} is now the host.`, { system: true });
-        }
-
-        if (room.phase === "discussion" && (room.players.length < 3 || socketId === room.impostorId)) {
-            resetRound(room, "lobby");
-            addChatMessage(room, "Round cancelled and returned to the lobby.", { system: true });
-        } else if (room.phase === "discussion" && Object.keys(room.votes).length === room.players.length) {
-            tallyVotes(room);
-            continue;
-        }
-
-        emitRoomState(roomCode);
+        finalizePlayerRemoval(roomCode, socketId);
     }
 }
 
@@ -484,6 +570,7 @@ app.get("/api/health", async (req, res) => {
 io.on("connection", (socket) => {
     socket.on("room:create", (payload = {}, callback = () => {}) => {
         const requestedName = normalizeName(payload.name);
+        const playerKey = normalizePlayerKey(payload.playerKey) || crypto.randomUUID();
 
         if (requestedName.length < 2) {
             callback({ ok: false, message: "Enter a name with at least 2 characters." });
@@ -502,7 +589,7 @@ io.on("connection", (socket) => {
         const room = {
             code: roomCode,
             hostId: socket.id,
-            players: [createPlayer(socket.id, requestedName)],
+            players: [createPlayer(socket.id, requestedName, playerKey)],
             phase: "lobby",
             round: 0,
             category: null,
@@ -520,13 +607,14 @@ io.on("connection", (socket) => {
         addChatMessage(room, `${requestedName} created the room. Share code ${roomCode} with friends.`, { system: true });
         rooms.set(roomCode, room);
         socket.join(roomCode);
-        callback({ ok: true, roomCode, playerName: requestedName });
+        callback({ ok: true, roomCode, playerName: requestedName, playerKey });
         emitRoomState(roomCode);
     });
 
     socket.on("room:join", (payload = {}, callback = () => {}) => {
         const requestedName = normalizeName(payload.name);
         const roomCode = normalizeRoomCode(payload.roomCode);
+        const playerKey = normalizePlayerKey(payload.playerKey) || crypto.randomUUID();
 
         if (requestedName.length < 2) {
             callback({ ok: false, message: "Enter a name with at least 2 characters." });
@@ -540,11 +628,29 @@ io.on("connection", (socket) => {
 
         removePlayerFromRooms(socket.id);
         const room = rooms.get(roomCode);
+        const reconnectingPlayer = room.players.find(
+            (entry) => entry.playerKey === playerKey && entry.connected === false
+        );
+
+        if (reconnectingPlayer) {
+            const previousSocketId = reconnectingPlayer.id;
+
+            clearDisconnectTimer(reconnectingPlayer);
+            reconnectingPlayer.id = socket.id;
+            reconnectingPlayer.connected = true;
+            remapPlayerReferences(room, previousSocketId, socket.id);
+            socket.join(roomCode);
+            addChatMessage(room, `${reconnectingPlayer.name} reconnected.`, { system: true });
+            callback({ ok: true, roomCode, playerName: reconnectingPlayer.name, playerKey, rejoined: true });
+            emitRoomState(roomCode);
+            return;
+        }
+
         const uniqueName = ensureUniquePlayerName(room, requestedName);
-        room.players.push(createPlayer(socket.id, uniqueName));
+        room.players.push(createPlayer(socket.id, uniqueName, playerKey));
         addChatMessage(room, `${uniqueName} joined the room.`, { system: true });
         socket.join(roomCode);
-        callback({ ok: true, roomCode, playerName: uniqueName });
+        callback({ ok: true, roomCode, playerName: uniqueName, playerKey });
         emitRoomState(roomCode);
     });
 
@@ -625,7 +731,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-        removePlayerFromRooms(socket.id);
+        removePlayerFromRooms(socket.id, { allowReconnect: true });
     });
 });
 

@@ -1,5 +1,3 @@
-const socket = io();
-
 const storedUser = (() => {
     try {
         return JSON.parse(localStorage.getItem("trivcrackUser") || "null");
@@ -7,6 +5,33 @@ const storedUser = (() => {
         return null;
     }
 })();
+
+const storedRoomSession = (() => {
+    try {
+        return JSON.parse(localStorage.getItem("trivcrackRoomSession") || "null");
+    } catch (error) {
+        return null;
+    }
+})();
+
+const roomSession = {
+    playerKey:
+        storedRoomSession?.playerKey ||
+        (window.crypto?.randomUUID
+            ? window.crypto.randomUUID()
+            : `player-${Date.now()}-${Math.random().toString(16).slice(2)}`),
+    roomCode: storedRoomSession?.roomCode || "",
+    playerName: storedRoomSession?.playerName || storedUser?.username || ""
+};
+
+const socket = io({
+    transports: ["websocket"],
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 500,
+    reconnectionDelayMax: 2500,
+    timeout: 10000
+});
 
 const elements = {
     feedback: document.getElementById("play-feedback"),
@@ -43,9 +68,23 @@ const elements = {
 let roomState = null;
 let countdownInterval = null;
 
-if (storedUser?.username) {
-    elements.playerName.value = storedUser.username;
+function persistRoomSession(updates = {}) {
+    Object.assign(roomSession, updates);
+    localStorage.setItem("trivcrackRoomSession", JSON.stringify(roomSession));
 }
+
+function clearRoomSession() {
+    persistRoomSession({
+        roomCode: "",
+        playerName: getPlayerName() || roomSession.playerName || storedUser?.username || ""
+    });
+}
+
+if (roomSession.playerName) {
+    elements.playerName.value = roomSession.playerName;
+}
+
+persistRoomSession();
 
 function setFeedback(message, isError = false) {
     elements.feedback.textContent = message;
@@ -58,6 +97,39 @@ function getPlayerName() {
 
 function getRoomCode() {
     return elements.roomCodeInput.value.trim().toUpperCase();
+}
+
+function attemptRoomReconnect() {
+    if (!roomSession.roomCode || !roomSession.playerName || !socket.connected) {
+        return;
+    }
+
+    socket.emit(
+        "room:join",
+        {
+            name: roomSession.playerName,
+            roomCode: roomSession.roomCode,
+            playerKey: roomSession.playerKey
+        },
+        (response) => {
+            if (!response?.ok) {
+                if (!roomState) {
+                    clearRoomSession();
+                }
+                return;
+            }
+
+            persistRoomSession({
+                roomCode: response.roomCode,
+                playerName: response.playerName || roomSession.playerName,
+                playerKey: response.playerKey || roomSession.playerKey
+            });
+
+            if (response.rejoined) {
+                setFeedback(`Reconnected to room ${response.roomCode}.`);
+            }
+        }
+    );
 }
 
 function formatTime(totalSeconds) {
@@ -127,6 +199,10 @@ function renderPlayers() {
             suffix.push("host");
         }
 
+        if (player.connected === false) {
+            suffix.push("reconnecting…");
+        }
+
         if (
             (roomState?.phase === "results" || roomState?.phase === "match-winner") &&
             roomState?.lastResult?.impostorId === player.id
@@ -162,7 +238,7 @@ function renderVoting() {
             button.classList.add("selected");
         }
 
-        button.disabled = Boolean(roomState?.you?.hasVoted);
+        button.disabled = !socket.connected || Boolean(roomState?.you?.hasVoted);
         button.addEventListener("click", () => {
             socket.emit("game:vote", { roomCode: roomState.roomCode, targetId: player.id }, (response) => {
                 if (!response?.ok) {
@@ -265,7 +341,17 @@ function render() {
     }
 
     const isHost = roomState.hostId === roomState?.you?.id;
-    elements.startRoundBtn.disabled = !isHost || roomState.players.length < 3;
+    const chatSubmitBtn = elements.chatForm.querySelector('button[type="submit"]');
+
+    elements.startRoundBtn.disabled = !socket.connected || !isHost || roomState.players.length < 3;
+    elements.chatInput.disabled = !socket.connected;
+    elements.chatInput.placeholder = socket.connected
+        ? "Drop a clue or accusation..."
+        : "Reconnecting to the room…";
+
+    if (chatSubmitBtn) {
+        chatSubmitBtn.disabled = !socket.connected;
+    }
     elements.startRoundBtn.textContent =
         roomState.phase === "match-winner"
             ? "Start New Match"
@@ -273,7 +359,9 @@ function render() {
               ? "Start Next Round"
               : "Start Round";
 
-    if (roomState.phase === "discussion") {
+    if (!socket.connected) {
+        elements.voteStatus.textContent = "Reconnecting to the room…";
+    } else if (roomState.phase === "discussion") {
         elements.voteStatus.textContent = `${roomState.submittedVotes}/${roomState.totalPlayers} votes locked in.`;
     } else if (roomState.phase === "results" || roomState.phase === "match-winner") {
         elements.voteStatus.textContent = roomState.lastResult?.message || "Round finished.";
@@ -297,12 +385,17 @@ function createRoom() {
         return;
     }
 
-    socket.emit("room:create", { name }, (response) => {
+    socket.emit("room:create", { name, playerKey: roomSession.playerKey }, (response) => {
         if (!response?.ok) {
             setFeedback(response?.message || "Unable to create a room.", true);
             return;
         }
 
+        persistRoomSession({
+            roomCode: response.roomCode,
+            playerName: response.playerName || name,
+            playerKey: response.playerKey || roomSession.playerKey
+        });
         elements.roomCodeInput.value = response.roomCode;
         setFeedback(`Room ${response.roomCode} created. Share it with your friends.`);
     });
@@ -322,13 +415,22 @@ function joinRoom() {
         return;
     }
 
-    socket.emit("room:join", { name, roomCode }, (response) => {
+    socket.emit("room:join", { name, roomCode, playerKey: roomSession.playerKey }, (response) => {
         if (!response?.ok) {
             setFeedback(response?.message || "Unable to join that room.", true);
             return;
         }
 
-        setFeedback(`Joined room ${response.roomCode}. Wait for the host to start.`);
+        persistRoomSession({
+            roomCode: response.roomCode,
+            playerName: response.playerName || name,
+            playerKey: response.playerKey || roomSession.playerKey
+        });
+        setFeedback(
+            response.rejoined
+                ? `Reconnected to room ${response.roomCode}.`
+                : `Joined room ${response.roomCode}. Wait for the host to start.`
+        );
     });
 }
 
@@ -368,6 +470,7 @@ elements.copyRoomBtn.addEventListener("click", async () => {
 });
 
 elements.leaveRoomBtn.addEventListener("click", () => {
+    clearRoomSession();
     socket.disconnect();
     window.location.reload();
 });
@@ -395,8 +498,21 @@ elements.chatForm.addEventListener("submit", (event) => {
     });
 });
 
+socket.on("connect", () => {
+    attemptRoomReconnect();
+    render();
+});
+
 socket.on("room:state", (nextState) => {
     roomState = nextState;
+
+    if (nextState?.roomCode) {
+        persistRoomSession({
+            roomCode: nextState.roomCode,
+            playerName: nextState.you?.name || roomSession.playerName
+        });
+    }
+
     render();
 });
 
@@ -404,9 +520,15 @@ socket.on("room:error", (message) => {
     setFeedback(message || "Something went wrong.", true);
 });
 
+socket.on("connect_error", () => {
+    setFeedback("Unable to reach the game server right now.", true);
+});
+
 socket.on("disconnect", () => {
-    if (roomState) {
-        setFeedback("Disconnected from the room. Refresh to reconnect.", true);
+    render();
+
+    if (roomSession.roomCode) {
+        setFeedback("Connection dropped. Reconnecting to the room…", true);
     }
 });
 

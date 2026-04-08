@@ -1,0 +1,2 @@
+cd /Users/kevinorange/WebDevFinal
+deno run deno_check.ts

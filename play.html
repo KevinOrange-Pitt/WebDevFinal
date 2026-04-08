@@ -3,17 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Play Game | Triv Crack</title>
+    <title>Impostor Party | Triv Crack</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1 class="title">Play Game</h1>
-        <p class="subtitle">This is your default game page. Add categories, question flow, and scoring here.</p>
+    <div class="container game-shell">
+        <h1 class="title">Impostor Party</h1>
+        <p class="subtitle">Create a room, invite friends, and figure out who is bluffing.</p>
+        <p id="play-feedback" class="status">Use your account name or a guest nickname to jump in.</p>
 
-        <div class="menu">
-            <button class="btn" onclick="window.location.href='/home.html'">Back to Home</button>
+        <section id="setup-panel" class="panel">
+            <input id="player-name" class="form-input" type="text" maxlength="20" placeholder="Your name">
+            <div class="room-actions">
+                <button id="create-room-btn" class="btn">Create Room</button>
+                <input id="room-code" class="form-input" type="text" maxlength="6" placeholder="Room code">
+                <button id="join-room-btn" class="btn secondary">Join Room</button>
+            </div>
+            <p class="helper-text">Need at least 3 players. The host starts each round.</p>
+        </section>
+
+        <section id="game-panel" class="game-board hidden">
+            <div class="room-toolbar card">
+                <div class="room-head">
+                    <div>
+                        <p class="eyebrow">Room <span id="room-code-display">----</span></p>
+                        <h2 id="phase-label">Waiting in lobby</h2>
+                        <p id="lobby-status" class="muted lobby-note">Waiting for players to join.</p>
+                    </div>
+                    <div class="room-status-pills">
+                        <div class="stat-pill">
+                            <span>Players</span>
+                            <strong id="player-count-chip">1 / 3+</strong>
+                        </div>
+                        <div class="stat-pill">
+                            <span>Timer</span>
+                            <strong id="timer-chip">--</strong>
+                        </div>
+                        <div class="stat-pill">
+                            <span>Goal</span>
+                            <strong id="goal-chip">5 pts</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="toolbar-actions">
+                    <button id="copy-room-btn" class="btn secondary small-btn">Copy Code</button>
+                    <button id="leave-room-btn" class="btn secondary small-btn">Leave</button>
+                </div>
+            </div>
+
+            <section id="winner-banner" class="card winner-banner hidden">
+                <h3>🏆 Match Winner</h3>
+                <p id="winner-text" class="muted">No winner yet.</p>
+            </section>
+
+            <div class="game-grid">
+                <section class="card">
+                    <h3>Category & Word</h3>
+                    <p id="category-text" class="muted">When the round starts, everyone sees the category.</p>
+                    <div class="secret-box">
+                        <p id="secret-text">Real players will also see the word here.</p>
+                    </div>
+                    <button id="start-round-btn" class="btn">Start Round</button>
+                </section>
+
+                <section class="card">
+                    <h3>Players</h3>
+                    <div id="player-list" class="player-list"></div>
+                </section>
+
+                <section class="card">
+                    <h3>Vote</h3>
+                    <p id="vote-status" class="muted">Voting opens during a live round.</p>
+                    <div id="vote-area" class="vote-grid"></div>
+                </section>
+
+                <section class="card result-card" id="result-card">
+                    <h3>Round Result</h3>
+                    <p id="result-summary" class="muted">No result yet.</p>
+                    <ul id="result-votes" class="result-list"></ul>
+                </section>
+
+                <section class="card chat-card">
+                    <h3>Room Chat</h3>
+                    <div id="chat-messages" class="chat-box"></div>
+                    <form id="chat-form" class="chat-form">
+                        <input id="chat-input" class="form-input" type="text" maxlength="220" placeholder="Drop a clue or accusation...">
+                        <button class="btn small-btn" type="submit">Send</button>
+                    </form>
+                </section>
+            </div>
+        </section>
+
+        <div class="menu compact-menu">
+            <button class="btn secondary" onclick="window.location.href='/home.html'">Back to Home</button>
         </div>
     </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="play.js"></script>
 </body>
 </html>

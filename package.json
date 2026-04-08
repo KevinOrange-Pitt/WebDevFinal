@@ -10,9 +10,11 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
-    "mongodb": "^6.9.0"
+    "mongodb": "^6.9.0",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.7"
+    "nodemon": "^3.1.7",
+    "socket.io-client": "^4.8.3"
   }
 }

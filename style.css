@@ -6,11 +6,12 @@
 }
 
 body {
-    height: 100vh;
+    min-height: 100vh;
     background: linear-gradient(135deg, #ff7eb3, #65d6ce);
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 24px;
 }
 
 .container {
@@ -76,4 +77,262 @@ footer {
     margin-top: 25px;
     font-size: 0.8rem;
     color: #999;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.game-shell {
+    width: min(1100px, 96vw);
+    text-align: left;
+}
+
+.panel,
+.card {
+    background: #fff7fb;
+    border: 1px solid #ffd3e5;
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #d9d9e3;
+    border-radius: 10px;
+    font-size: 1rem;
+}
+
+.room-actions,
+.toolbar-actions,
+.chat-form,
+.compact-menu {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.room-actions {
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.helper-text,
+.muted {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+.helper-text {
+    margin-top: 12px;
+}
+
+.compact-menu {
+    margin-top: 16px;
+    justify-content: flex-end;
+}
+
+.small-btn {
+    padding: 10px 14px;
+    font-size: 0.92rem;
+}
+
+.eyebrow {
+    font-size: 0.85rem;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+}
+
+.room-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.room-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+.room-status-pills {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.stat-pill {
+    background: #ffffff;
+    border: 1px solid #f2c6da;
+    border-radius: 12px;
+    padding: 10px 12px;
+    min-width: 88px;
+}
+
+.stat-pill span {
+    display: block;
+    font-size: 0.76rem;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-pill strong {
+    display: block;
+    margin-top: 4px;
+    color: #333;
+}
+
+.timer-live {
+    color: #b42318 !important;
+}
+
+.lobby-note {
+    margin-top: 6px;
+}
+
+.winner-banner {
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #fff7d6, #fff0f6);
+    border-color: #f0c54f;
+}
+
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.secret-box {
+    margin: 14px 0;
+    padding: 16px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #fff0f6, #eefcff);
+    border: 1px dashed #ff7eb3;
+    font-weight: bold;
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+}
+
+.player-list,
+.vote-grid,
+.result-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.player-pill {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid #e8dce4;
+}
+
+.player-pill.current-player {
+    border-color: #ff4f94;
+    background: #fff0f7;
+}
+
+.vote-btn {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: none;
+    background: #5b7cfa;
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.96rem;
+}
+
+.vote-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.vote-btn.selected {
+    background: #7a3cff;
+}
+
+.result-list {
+    padding-left: 18px;
+}
+
+.chat-card {
+    grid-column: span 2;
+}
+
+.chat-box {
+    margin: 12px 0;
+    background: #ffffff;
+    border: 1px solid #ecdfe7;
+    border-radius: 12px;
+    min-height: 180px;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.chat-message {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f4f7ff;
+}
+
+.chat-message.system {
+    background: #fff3cd;
+}
+
+.chat-message strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.chat-form {
+    align-items: stretch;
+}
+
+.chat-form .form-input {
+    flex: 1;
+}
+
+@media (max-width: 760px) {
+    .container {
+        width: min(96vw, 500px);
+        padding: 24px;
+    }
+
+    .game-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chat-card {
+        grid-column: span 1;
+    }
+
+    .room-toolbar,
+    .toolbar-actions,
+    .chat-form,
+    .room-actions,
+    .room-head {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }

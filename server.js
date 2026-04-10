@@ -530,7 +530,7 @@ app.post("/api/auth/login", async (req, res) => {
     try {
         const user = await usersCollection.findOne({ email: trimmedEmail });
 
-        if (!user || !verifyPassword(password, user.passwordHash)) {
+        if (!user || !(await verifyPassword(password, user.passwordHash)) {
             return res.status(401).json({ message: "Invalid email or password." });
         }
 

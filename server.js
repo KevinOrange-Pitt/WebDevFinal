@@ -2,6 +2,7 @@ const path = require("path");
 const crypto = require("crypto");
 const http = require("http");
 const express = require("express");
+const mongoose = require("mongoose");
 const { Server } = require("socket.io");
 const { MongoClient } = require("mongodb");
 require("dotenv").config();
@@ -530,7 +531,7 @@ app.post("/api/auth/login", async (req, res) => {
     try {
         const user = await usersCollection.findOne({ email: trimmedEmail });
 
-        if (!user || !(await verifyPassword(password, user.passwordHash)) {
+        if (!user || !verifyPassword(password, user.passwordHash)) {
             return res.status(401).json({ message: "Invalid email or password." });
         }
 
@@ -576,6 +577,29 @@ app.get("/api/health", async (req, res) => {
     }
 });
 
+mongoose.connect('mongodb://localhost:27017/leaderboard', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
+
+const playerSchema = new mongoose.Schema({
+    name: String,
+    score: Number
+});
+
+const Player = mongoose.model('Player', playerSchema);
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname)));
+
+app.get('/api/leaderboard', async (req, res) => {
+    try {
+        const topPlayers = await Player.find().sort({ score: -1 }).limit(10);
+        res.json(topPlayers);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch leaderboard.' });
+    }
+});
 io.on("connection", (socket) => {
     socket.on("room:create", (payload = {}, callback = () => {}) => {
         const requestedName = normalizeName(payload.name);

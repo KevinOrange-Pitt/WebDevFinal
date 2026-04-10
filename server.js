@@ -46,7 +46,7 @@ const ROUND_DURATION_MS = 75000;
 const WINNING_SCORE = 5;
 const RECONNECT_GRACE_MS = 90000;
 
-function hashPassword(password) {
+async function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString("hex");
     const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, "sha512").toString("hex");
     return `${salt}:${hash}`;

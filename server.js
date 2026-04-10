@@ -494,7 +494,7 @@ app.post("/api/auth/register", async (req, res) => {
     }
 
     try {
-        const passwordHash = hashPassword(password);
+        const passwordHash = await hashPassword(password);
         await usersCollection.insertOne({
             username: trimmedUsername,
             email: trimmedEmail,

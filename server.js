@@ -577,10 +577,14 @@ app.get("/api/health", async (req, res) => {
     }
 });
 
-mongoose.connect('mongodb://localhost:27017/leaderboard', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
+mongoose
+    .connect('mongodb://localhost:27017/leaderboard')
+    .then(() => {
+        console.log('Connected to local leaderboard MongoDB.');
+    })
+    .catch((error) => {
+        console.warn('Leaderboard MongoDB unavailable. Continuing without leaderboard DB.', error.message);
+    });
 
 const playerSchema = new mongoose.Schema({
     name: String,

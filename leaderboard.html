@@ -10,6 +10,18 @@
     <div class="container">
         <h1 class="title">Leaderboard</h1>
         <p class="subtitle">This is your default leaderboard page. Add top players and scores from MongoDB here.</p>
+        <table>
+            <thread>
+                <tr
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Score</th>
+            </thread>
+            <tbody id="leaderboard-body">
+                <tr><td colspan="3">Loading...`</td></tr>
+                <!-- Leaderboard entries will be dynamically inserted here -->
+            </tbody>
+        </table>
 
         <div class="menu">
             <button class="btn" onclick="window.location.href='/home.html'">Back to Home</button>

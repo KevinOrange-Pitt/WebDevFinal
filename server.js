@@ -2,6 +2,7 @@ const path = require("path");
 const crypto = require("crypto");
 const http = require("http");
 const express = require("express");
+const mongoose = require("mongoose");
 const { Server } = require("socket.io");
 const { MongoClient } = require("mongodb");
 require("dotenv").config();
@@ -46,7 +47,7 @@ const ROUND_DURATION_MS = 75000;
 const WINNING_SCORE = 5;
 const RECONNECT_GRACE_MS = 90000;
 
-function hashPassword(password) {
+ function hashPassword(password) {
     const salt = crypto.randomBytes(16).toString("hex");
     const hash = crypto.pbkdf2Sync(password, salt, 100000, 64, "sha512").toString("hex");
     return `${salt}:${hash}`;
@@ -494,7 +495,7 @@ app.post("/api/auth/register", async (req, res) => {
     }
 
     try {
-        const passwordHash = hashPassword(password);
+        const passwordHash = await hashPassword(password);
         await usersCollection.insertOne({
             username: trimmedUsername,
             email: trimmedEmail,
@@ -576,6 +577,33 @@ app.get("/api/health", async (req, res) => {
     }
 });
 
+mongoose
+    .connect('mongodb://localhost:27017/leaderboard')
+    .then(() => {
+        console.log('Connected to local leaderboard MongoDB.');
+    })
+    .catch((error) => {
+        console.warn('Leaderboard MongoDB unavailable. Continuing without leaderboard DB.', error.message);
+    });
+
+const playerSchema = new mongoose.Schema({
+    name: String,
+    score: Number
+});
+
+const Player = mongoose.model('Player', playerSchema);
+
+app.use(express.json());
+app.use(express.static(path.join(__dirname)));
+
+app.get('/api/leaderboard', async (req, res) => {
+    try {
+        const topPlayers = await Player.find().sort({ score: -1 }).limit(10);
+        res.json(topPlayers);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to fetch leaderboard.' });
+    }
+});
 io.on("connection", (socket) => {
     socket.on("room:create", (payload = {}, callback = () => {}) => {
         const requestedName = normalizeName(payload.name);

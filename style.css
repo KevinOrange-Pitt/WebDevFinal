@@ -360,7 +360,7 @@ html.dark {
     color: #eee;
 }
 
-/* DARK MODE BACKGROUND */
+/* DARK MODE BACKGROUND fixed */
 html.dark body {
     background: linear-gradient(135deg, #2a0f1f, #0f2a25);
 }

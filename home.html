@@ -4,9 +4,19 @@
     <meta charset="UTF-8">
     <title>Triv Crack</title>
     <link rel="stylesheet" href="style.css">
+
+    <script>
+        (function () {
+        const theme = localStorage.getItem("theme");
+
+        if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+        }
+        })();
+    </script>
 </head>
 <body>
-
+    
     <div class="container">
 
         <!-- Logo / Title -->

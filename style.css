@@ -335,4 +335,129 @@ footer {
         flex-direction: column;
         align-items: stretch;
     }
+    
+}
+
+/* SETTINGS ITEMS */
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9f9f9;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    font-size: 1rem;
+}
+
+.setting-item input {
+    transform: scale(1.2);
+    cursor: pointer;
+}
+
+/* DARK MODE BASE */
+html.dark {
+    color: #eee;
+}
+
+/* DARK MODE BACKGROUND */
+html.dark body {
+    background: linear-gradient(135deg, #0f1020, #121826);
+}
+
+/* MAIN UI CONTAINERS */
+html.dark .container {
+    background: #1f1f2e;
+    color: #eee;
+}
+
+/* CARDS / PANELS */
+html.dark .card,
+html.dark .panel {
+    background: #1f1f2e;
+    border-color: #333;
+}
+
+/* INPUTS */
+html.dark input,
+html.dark textarea,
+html.dark .form-input {
+    background: #2a2a3d;
+    border: 1px solid #444;
+    color: #eee;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #888;
+}
+
+/* BUTTONS */
+html.dark .btn {
+    background: #4f46e5;
+}
+
+html.dark .btn:hover {
+    background: #4338ca;
+}
+
+/* TEXT COLORS */
+html.dark .title {
+    color: #fff;
+}
+
+html.dark .subtitle,
+html.dark .status {
+    color: #bbb;
+}
+
+/* GAME UI ELEMENTS */
+html.dark .player-pill,
+html.dark .stat-pill,
+html.dark .chat-box,
+html.dark .setting-item {
+    background: #2a2a3d;
+    border-color: #444;
+}
+
+/* SECRET BOX */
+html.dark .secret-box {
+    background: linear-gradient(135deg, #2a1a2e, #102a2a);
+    border-color: #555;
+}
+
+/* CHAT MESSAGES */
+html.dark .chat-message {
+    color: #eee;
+}
+
+/* AUTH PAGE */
+html.dark .auth-card {
+    background: #1f1f2e;
+    color: #eee;
+}
+
+html.dark .auth-form label {
+    color: #ddd;
+}
+
+html.dark .auth-form input {
+    background: #2a2a3d;
+    border: 1px solid #444;
+    color: #fff;
+}
+
+html.dark .tab {
+    background: #2a2a3d;
+    color: #ddd;
+    border: 1px solid #444;
+}
+
+html.dark .tab.active {
+    background: #4f46e5;
+    color: white;
+}
+
+html.dark .back-link {
+    color: #9aa4ff;
 }

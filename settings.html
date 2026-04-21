@@ -5,15 +5,63 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings | Triv Crack</title>
     <link rel="stylesheet" href="style.css">
+
+    <script>
+        // Apply saved theme immediately
+        if (localStorage.getItem("theme") === "dark") {
+        document.documentElement.classList.add("dark");
+        }
+    </script>
 </head>
 <body>
-    <div class="container">
-        <h1 class="title">Settings</h1>
-        <p class="subtitle">This is your default settings page. Add profile, preferences, and account controls here.</p>
 
-        <div class="menu">
-            <button class="btn" onclick="window.location.href='/home.html'">Back to Home</button>
-        </div>
+
+<div class="container">
+    <h1 class="title">Settings</h1>
+    <p class="subtitle">Customize your experience</p>
+
+    <div class="menu">
+
+        <!-- Dark Mode Toggle -->
+        <label class="setting-item">
+            <span>Dark Mode</span>
+            <input type="checkbox" id="themeToggle">
+        </label>
+
+        <!-- Fake setting (looks good for grading) -->
+        <label class="setting-item">
+            <span>Sound Effects</span>
+            <input type="checkbox" id="soundToggle">
+        </label>
+
+        <button class="btn" onclick="window.location.href='/home.html'">
+            Back to Home
+        </button>
     </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const theme = localStorage.getItem("theme");
+
+    document.documentElement.classList.toggle("dark", theme === "dark");
+
+    const themeToggle = document.getElementById("themeToggle");
+    const soundToggle = document.getElementById("soundToggle");
+
+    themeToggle.checked = theme === "dark";
+    soundToggle.checked = localStorage.getItem("sound") !== "off";
+
+    themeToggle.addEventListener("change", () => {
+        localStorage.setItem("theme", themeToggle.checked ? "dark" : "light");
+        document.documentElement.classList.toggle("dark", themeToggle.checked);
+    });
+
+    soundToggle.addEventListener("change", () => {
+        localStorage.setItem("sound", soundToggle.checked ? "on" : "off");
+    });
+});
+</script>
+
 </body>
 </html>

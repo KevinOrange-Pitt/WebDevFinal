@@ -18,14 +18,15 @@
         <h1 class="title">Leaderboard</h1>
         <p class="subtitle">This is your default leaderboard page. Add top players and scores from MongoDB here.</p>
         <table>
-            <thread>
-                <tr
+            <thead>
+                <tr>
                     <th>Rank</th>
                     <th>Player</th>
                     <th>Score</th>
-            </thread>
+                </tr>
+            </thead>
             <tbody id="leaderboard-body">
-                <tr><td colspan="3">Loading...`</td></tr>
+                <tr><td colspan="3">Loading...</td></tr>
                 <!-- Leaderboard entries will be dynamically inserted here -->
             </tbody>
         </table>
@@ -34,6 +35,29 @@
             <button class="btn" onclick="window.location.href='/home.html'">Back to Home</button>
         </div>
     </div>
-    <script src="server.js"></script>
+    <script>
+    async function loadLeaderboard() {
+        const tbody = document.getElementById("leaderboard-body");
+        tbody.innerHTML = `<tr><td colspan='3'>Loading...</td></tr>`;
+        try {
+            const res = await fetch("/api/leaderboard");
+            if (!res.ok) throw new Error("Failed to fetch leaderboard");
+            const data = await res.json();
+            if (!Array.isArray(data) || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan='3'>No scores yet.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = "";
+            data.forEach((player, idx) => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `<td>${idx + 1}</td><td>${player.name}</td><td>${player.score}</td>`;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan='3'>Error loading leaderboard.</td></tr>`;
+        }
+    }
+    window.addEventListener("DOMContentLoaded", loadLeaderboard);
+    </script>
 </body>
 </html>

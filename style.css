@@ -441,7 +441,9 @@ html.dark .secret-box {
 /* CHAT MESSAGES */
 html.dark .chat-message {
     color: #eee;
+    background: #000 !important;
 }
+
 
 /* AUTH PAGE */
 html.dark .auth-card {

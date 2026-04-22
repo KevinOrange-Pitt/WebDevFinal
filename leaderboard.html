@@ -10,16 +10,17 @@
     <div class="container">
         <h1 class="title">Leaderboard</h1>
         <p class="subtitle">This is your default leaderboard page. Add top players and scores from MongoDB here.</p>
-        <table>
-            <thread>
-                <tr
-                    <th>Rank</th>
-                    <th>Player</th>
-                    <th>Score</th>
-            </thread>
+        <table class="leaderboard">
+            <thead>
+                <tr>
+                    <th scope="col">Rank</th>
+                    <th scope="col">Player</th>
+                    <th scope="col">Score</th>
+                </tr>
+            </thead>
             <tbody id="leaderboard-body">
-                <tr><td colspan="3">Loading...`</td></tr>
-                <!-- Leaderboard entries will be dynamically inserted here -->
+                <tr><td colspan="3">Loading...</td></tr>
+               
             </tbody>
         </table>
 
@@ -27,6 +28,7 @@
             <button class="btn" onclick="window.location.href='/home.html'">Back to Home</button>
         </div>
     </div>
-    <script src="server.js"></script>
+    <script src="leaderboard.js"></script>
+    
 </body>
 </html>

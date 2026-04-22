@@ -1,81 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaderboard | Triv Crack</title>
-    <link rel="stylesheet" href="style.css">
-
-    <script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard | Triv Crack</title>
+<link rel="stylesheet" href="style.css">
+<script>
     (function () {
-    document.documentElement.classList.toggle(
-    "dark",localStorage.getItem("theme") === "dark");
+        document.documentElement.classList.toggle(
+        "dark", localStorage.getItem("theme") === "dark");
     })();
-    </script>
+</script>
 </head>
 <body>
-    <div class="container">
-        <h1 class="title">Leaderboard</h1>
-        <p class="subtitle">This is your default leaderboard page. Add top players and scores from MongoDB here.</p>
-        <table class="leaderboard">
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Player</th>
-                    <th>Score</th>
-                </tr>
-            </thead>
-            <tbody id="leaderboard-body">
-                <tr><td colspan="3">Loading...</td></tr>
-                <!-- Leaderboard entries will be dynamically inserted here -->
-            </tbody>
-        </table>
-        <table>
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Player</th>
-                    <th>Score</th>
->>>>>>> leaderboard-update
-                </tr>
-            </thead>
-            <tbody id="leaderboard-body">
-                <tr><td colspan="3">Loading...</td></tr>
-<<<<<<< HEAD
-               
-=======
-                <!-- Leaderboard entries will be dynamically inserted here -->
->>>>>>> leaderboard-update
-            </tbody>
-        </table>
-
-        <div class="menu">
-            <button class="btn" onclick="window.location.href='/home.html'">Back to Home</button>
-        </div>
-    </div>
-    <script>
-    async function loadLeaderboard() {
-        const tbody = document.getElementById("leaderboard-body");
-        tbody.innerHTML = `<tr><td colspan='3'>Loading...</td></tr>`;
-        try {
-            const res = await fetch("/api/leaderboard");
-            if (!res.ok) throw new Error("Failed to fetch leaderboard");
-            const data = await res.json();
-            if (!Array.isArray(data) || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan='3'>No scores yet.</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = "";
-            data.forEach((player, idx) => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `<td>${idx + 1}</td><td>${player.name}</td><td>${player.score}</td>`;
-                tbody.appendChild(tr);
-            });
-        } catch (err) {
-            tbody.innerHTML = `<tr><td colspan='3'>Error loading leaderboard.</td></tr>`;
+<div class="container">
+<h1 class="title">Leaderboard</h1>
+<p class="subtitle">Top players and scores.</p>
+<table class="leaderboard">
+<thead>
+<tr>
+<th>Rank</th>
+<th>Player</th>
+<th>Score</th>
+</tr>
+</thead>
+<tbody id="leaderboard-body">
+<tr><td colspan="3">Loading...</td></tr>
+</tbody>
+</table>
+<div class="menu">
+<button class="btn" onclick="window.location.href='/home.html'">Back to Home</button>
+</div>
+</div>
+<script>
+async function loadLeaderboard() {
+    const tbody = document.getElementById("leaderboard-body");
+    tbody.innerHTML = `<tr><td colspan='3'>Loading...</td></tr>`;
+    try {
+        const res = await fetch("/api/leaderboard");
+        if (!res.ok) throw new Error("Failed to fetch leaderboard");
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan='3'>No scores yet.</td></tr>`;
+            return;
         }
+        tbody.innerHTML = "";
+        data.forEach((player, idx) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td>${idx + 1}</td><td>${player.name}</td><td>${player.score}</td>`;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan='3'>Error loading leaderboard.</td></tr>`;
     }
-    window.addEventListener("DOMContentLoaded", loadLeaderboard);
-    </script>
+}
+window.addEventListener("DOMContentLoaded", loadLeaderboard);
+</script>
 </body>
 </html>

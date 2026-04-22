@@ -367,10 +367,22 @@ function tallyVotes(room) {
 
     addChatMessage(room, message, { system: true });
 
+
+    // Update leaderboard in MongoDB if there is a match winner
     if (room.matchWinner) {
         addChatMessage(room, `🏆 ${room.matchWinner.name} reached ${room.matchWinner.score} points and won the match!`, {
             system: true
         });
+        // Save or update the winner's score in the leaderboard
+        if (typeof Player === "function") {
+            Player.findOneAndUpdate(
+                { name: room.matchWinner.name },
+                { $max: { score: room.matchWinner.score } },
+                { upsert: true, new: true }
+            ).catch((err) => {
+                console.warn("Failed to update leaderboard for winner:", err.message);
+            });
+        }
     }
 
     emitRoomState(room.code);

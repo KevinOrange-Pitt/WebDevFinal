@@ -313,6 +313,18 @@ footer {
     flex: 1;
 }
 
+th[scope="col"] {
+  background-color: #505050;
+  color: white;
+}
+table {
+  border-collapse: collapse;
+  border: 8px solid rgb(140 140 140);
+  font-family: sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 8px;
+}
+
 @media (max-width: 760px) {
     .container {
         width: min(96vw, 500px);

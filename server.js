@@ -2,7 +2,6 @@ const path = require("path");
 const crypto = require("crypto");
 const http = require("http");
 const express = require("express");
-const mongoose = require("mongoose");
 const { Server } = require("socket.io");
 const { MongoClient } = require("mongodb");
 require("dotenv").config();
@@ -374,13 +373,14 @@ function tallyVotes(room) {
             system: true
         });
         // Save or update the winner's score in the leaderboard
-        if (typeof Player === "function") {
-            Player.findOneAndUpdate(
+         if (mongoConnected) {
+            const db = mongoClient.db('trivcrack');
+            db.collection('leaderboard').updateOne(
                 { name: room.matchWinner.name },
                 { $max: { score: room.matchWinner.score } },
-                { upsert: true, new: true }
+                { upsert: true }
             ).catch((err) => {
-                console.warn("Failed to update leaderboard for winner:", err.message);
+                console.warn("Failed to update leaderboard:", err.message);
             });
         }
     }
@@ -589,42 +589,33 @@ app.get("/api/health", async (req, res) => {
     }
 });
 
-mongoose
-    .connect('mongodb://localhost:27017/leaderboard')
-    .then(() => {
-        console.log('Connected to local leaderboard MongoDB.');
-    })
-    .catch((error) => {
-        console.warn('Leaderboard MongoDB unavailable. Continuing without leaderboard DB.', error.message);
-    });
-
-const playerSchema = new mongoose.Schema({
-    name: String,
-    score: Number
-});
-
-const Player = mongoose.model('Player', playerSchema);
-
 
 app.get('/api/leaderboard', async (req, res) => {
+    if (!mongoConnected) return res.status(503).json({ message: 'DB not connected.' });
     try {
-        const topPlayers = await Player.find().sort({ score: -1 }).limit(10);
-        res.json(topPlayers);
+        const db = mongoClient.db('trivcrack');
+        const top = await db.collection('leaderboard').find().sort({ score: -1 }).limit(10).toArray();
+        res.json(top);
     } catch (err) {
         res.status(500).json({ message: 'Failed to fetch leaderboard.' });
     }
 });
 app.post('/api/leaderboard', async (req, res) => {
+    if (!mongoConnected) return res.status(503).json({ message: 'DB not connected.' });
     const { player, score } = req.body;
     if (!player || typeof score !== 'number') {
-        return res.status(400).json({ message: 'Player name and score are required.' });
+        return res.status(400).json({ message: 'Player and score required.' });
     }
     try {
-        const newEntry = new Player({ name: player, score });
-        await newEntry.save();
-        res.status(201).json({ message: 'Score added to leaderboard.' });
+        const db = mongoClient.db('trivcrack');
+        await db.collection('leaderboard').updateOne(
+            { name: player },
+            { $max: { score } },
+            { upsert: true }
+        );
+        res.status(201).json({ message: 'Score saved.' });
     } catch (err) {
-        res.status(500).json({ message: 'Failed to add score to leaderboard.' });
+        res.status(500).json({ message: 'Failed to save score.' });
     }
 });
 io.on("connection", (socket) => {

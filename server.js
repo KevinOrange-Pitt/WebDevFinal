@@ -593,8 +593,6 @@ const playerSchema = new mongoose.Schema({
 
 const Player = mongoose.model('Player', playerSchema);
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname)));
 
 app.get('/api/leaderboard', async (req, res) => {
     try {
@@ -602,6 +600,19 @@ app.get('/api/leaderboard', async (req, res) => {
         res.json(topPlayers);
     } catch (err) {
         res.status(500).json({ message: 'Failed to fetch leaderboard.' });
+    }
+});
+app.post('/api/leaderboard', async (req, res) => {
+    const { player, score } = req.body;
+    if (!player || typeof score !== 'number') {
+        return res.status(400).json({ message: 'Player name and score are required.' });
+    }
+    try {
+        const newEntry = new Player({ name: player, score });
+        await newEntry.save();
+        res.status(201).json({ message: 'Score added to leaderboard.' });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to add score to leaderboard.' });
     }
 });
 io.on("connection", (socket) => {
